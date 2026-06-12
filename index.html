@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Новая задача</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --border: #2e2e3a;
+    --accent: #7c6af7;
+    --accent-dim: #3d3570;
+    --text: #f0eeff;
+    --muted: #7a7a9a;
+    --success: #4caf82;
+    --error: #e05c5c;
+    --radius: 14px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'SF Pro Text', 'Segoe UI', sans-serif;
+    padding: 20px 16px 32px;
+    min-height: 100vh;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .header-icon {
+    width: 36px; height: 36px;
+    background: var(--accent-dim);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="time"],
+  select {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 16px;
+    padding: 13px 15px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6);
+    cursor: pointer;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .duration-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .dur-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dur-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .dur-custom {
+    grid-column: span 4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .dur-custom input {
+    flex: 1;
+    text-align: center;
+  }
+
+  .dur-custom span {
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .time-end-display {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 15px;
+    font-size: 16px;
+    color: var(--accent);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .time-end-display .label-small {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .repeat-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 15px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .repeat-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .toggle-switch {
+    width: 44px; height: 26px;
+    background: var(--border);
+    border-radius: 13px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch.on { background: var(--accent); }
+
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+  }
+
+  .toggle-switch.on::after { transform: translateX(18px); }
+
+  .repeat-options {
+    margin-top: 10px;
+    display: none;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .repeat-options.visible { display: flex; }
+
+  .day-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .day-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .quick-days {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .quick-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 700;
+    padding: 16px;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.2px;
+  }
+
+  .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 16px; right: 16px;
+    background: var(--success);
+    color: white;
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 15px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s;
+    z-index: 100;
+  }
+
+  .toast.error { background: var(--error); }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">✦</div>
+  <h1>Новая задача</h1>
+</div>
+
+<div class="field">
+  <label>Название</label>
+  <input type="text" id="taskName" placeholder="Что нужно сделать?" autocomplete="off">
+</div>
+
+<div class="field">
+  <label>Дата</label>
+  <input type="date" id="taskDate">
+</div>
+
+<div class="row">
+  <div class="field">
+    <label>Начало</label>
+    <input type="time" id="taskStart">
+  </div>
+  <div class="field">
+    <label>Конец</label>
+    <div class="time-end-display" id="endDisplay">
+      <span class="label-small">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="field">
+  <label>Длительность</label>
+  <div class="duration-grid">
+    <button class="dur-btn" data-min="15">15м</button>
+    <button class="dur-btn" data-min="30">30м</button>
+    <button class="dur-btn" data-min="60">1ч</button>
+    <button class="dur-btn" data-min="90">1.5ч</button>
+    <button class="dur-btn" data-min="120">2ч</button>
+    <button class="dur-btn" data-min="180">3ч</button>
+    <button class="dur-btn" data-min="240">4ч</button>
+    <button class="dur-btn" data-min="0" id="customDurBtn">✎</button>
+  </div>
+  <div class="dur-custom" id="customDurRow" style="display:none">
+    <input type="number" id="customMinutes" placeholder="90" min="1" max="1440" style="text-align:center">
+    <span>минут</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="field">
+  <div class="repeat-toggle" id="repeatToggle">
+    <div class="repeat-toggle-left">
+      <span>🔁</span>
+      <span>Повторяемая задача</span>
+    </div>
+    <div class="toggle-switch" id="toggleSwitch"></div>
+  </div>
+  <div class="repeat-options" id="repeatOptions">
+    <div class="quick-days">
+      <button class="quick-btn" id="quickWeek">Вся неделя</button>
+      <button class="quick-btn" id="quickWorkdays">Пн–Пт</button>
+      <button class="quick-btn" id="quickWeekend">Сб–Вс</button>
+    </div>
+    <button class="day-btn" data-day="1">Пн</button>
+    <button class="day-btn" data-day="2">Вт</button>
+    <button class="day-btn" data-day="3">Ср</button>
+    <button class="day-btn" data-day="4">Чт</button>
+    <button class="day-btn" data-day="5">Пт</button>
+    <button class="day-btn" data-day="6">Сб</button>
+    <button class="day-btn" data-day="0">Вс</button>
+  </div>
+</div>
+
+<button class="submit-btn" id="submitBtn">Добавить в Notion ✦</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PROXY_URL = 'http://localhost:5055/create-task';
+
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.expand(); tg.setHeaderColor('#0f0f13'); }
+
+// Set today as default date
+const today = new Date();
+const pad = n => String(n).padStart(2,'0');
+document.getElementById('taskDate').value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+// Duration logic
+let selectedMinutes = 0;
+const durBtns = document.querySelectorAll('.dur-btn[data-min]');
+
+durBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const min = parseInt(btn.dataset.min);
+    if (min === 0) {
+      // custom
+      durBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('customDurRow').style.display = 'flex';
+      document.getElementById('customMinutes').focus();
+      return;
+    }
+    document.getElementById('customDurRow').style.display = 'none';
+    durBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedMinutes = min;
+    updateEndTime();
+  });
+});
+
+document.getElementById('customMinutes').addEventListener('input', e => {
+  selectedMinutes = parseInt(e.target.value) || 0;
+  updateEndTime();
+});
+
+document.getElementById('taskStart').addEventListener('change', updateEndTime);
+
+function updateEndTime() {
+  const startVal = document.getElementById('taskStart').value;
+  const display = document.getElementById('endDisplay');
+  if (!startVal || !selectedMinutes) {
+    display.innerHTML = '<span class="label-small">—</span>';
+    return;
+  }
+  const [h, m] = startVal.split(':').map(Number);
+  const endMins = h * 60 + m + selectedMinutes;
+  const endH = Math.floor(endMins / 60) % 24;
+  const endM = endMins % 60;
+  display.innerHTML = `${pad(endH)}:${pad(endM)}`;
+}
+
+// Repeat toggle
+let repeatOn = false;
+let selectedDays = new Set();
+
+document.getElementById('repeatToggle').addEventListener('click', () => {
+  repeatOn = !repeatOn;
+  document.getElementById('toggleSwitch').classList.toggle('on', repeatOn);
+  document.getElementById('repeatOptions').classList.toggle('visible', repeatOn);
+});
+
+document.querySelectorAll('.day-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const d = parseInt(btn.dataset.day);
+    if (selectedDays.has(d)) { selectedDays.delete(d); btn.classList.remove('active'); }
+    else { selectedDays.add(d); btn.classList.add('active'); }
+  });
+});
+
+function setDays(days) {
+  selectedDays = new Set(days);
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.classList.toggle('active', selectedDays.has(parseInt(btn.dataset.day)));
+  });
+}
+
+document.getElementById('quickWeek').addEventListener('click', () => setDays([0,1,2,3,4,5,6]));
+document.getElementById('quickWorkdays').addEventListener('click', () => setDays([1,2,3,4,5]));
+document.getElementById('quickWeekend').addEventListener('click', () => setDays([0,6]));
+
+// Toast
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(() => t.className = 'toast' + (isError ? ' error' : ''), 3000);
+}
+
+// Get dates to create (for repeat)
+function getDatesToCreate(startDateStr) {
+  if (!repeatOn || selectedDays.size === 0) return [startDateStr];
+  const dates = [];
+  const base = new Date(startDateStr + 'T12:00:00');
+  // Create for next 7 days from selected date
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    if (selectedDays.has(d.getDay())) {
+      dates.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`);
+    }
+  }
+  return dates.length ? dates : [startDateStr];
+}
+
+// Create Notion entry
+async function createNotionEntry(name, dateStr, startTime, endTime, isRepeat) {
+  const startISO = startTime ? `${dateStr}T${startTime}:00+02:00` : dateStr;
+  const endISO = endTime ? `${dateStr}T${endTime}:00+02:00` : null;
+
+  const res = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name,
+      start_iso: startISO,
+      end_iso: endISO,
+      repeat: isRepeat
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Ошибка сервера');
+  }
+  return res.json();
+}
+
+// Submit
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const name = document.getElementById('taskName').value.trim();
+  const dateStr = document.getElementById('taskDate').value;
+  const startTime = document.getElementById('taskStart').value;
+
+  if (!name) { showToast('Введи название задачи', true); return; }
+  if (!dateStr) { showToast('Выбери дату', true); return; }
+
+  // Calculate end time
+  let endTime = null;
+  if (startTime && selectedMinutes) {
+    const [h, m] = startTime.split(':').map(Number);
+    const endMins = h * 60 + m + selectedMinutes;
+    endTime = `${pad(Math.floor(endMins / 60) % 24)}:${pad(endMins % 60)}`;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняю...';
+
+  try {
+    const dates = getDatesToCreate(dateStr);
+    for (const d of dates) {
+      await createNotionEntry(name, d, startTime, endTime, repeatOn && selectedDays.size > 0);
+    }
+    const count = dates.length;
+    showToast(count > 1 ? `✓ Создано ${count} задач` : '✓ Задача добавлена');
+    
+    // Reset form
+    setTimeout(() => {
+      document.getElementById('taskName').value = '';
+      document.getElementById('taskStart').value = '';
+      document.getElementById('endDisplay').innerHTML = '<span class="label-small">—</span>';
+      durBtns.forEach(b => b.classList.remove('active'));
+      selectedMinutes = 0;
+      if (repeatOn) {
+        repeatOn = false;
+        document.getElementById('toggleSwitch').classList.remove('on');
+        document.getElementById('repeatOptions').classList.remove('visible');
+        selectedDays.clear();
+        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+      }
+      btn.disabled = false;
+      btn.textContent = 'Добавить в Notion ✦';
+    }, 1500);
+
+  } catch(e) {
+    showToast('Ошибка: ' + e.message, true);
+    btn.disabled = false;
+    btn.textContent = 'Добавить в Notion ✦';
+  }
+});
+</script>
+</body>
+</html>
